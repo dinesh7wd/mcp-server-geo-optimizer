@@ -1,0 +1,52 @@
+# mcp-server-geo-optimizer
+
+Cursor agent rules for this repository. Follow these constraints on every change.
+
+## Scope
+
+- Work only inside this repository. Never modify sibling projects.
+- One layer at a time: domain → infrastructure → services → tools → server.
+
+## Architecture
+
+- Transport and MCP protocol stay in `src/index.ts` and `src/server.ts`.
+- Tools define schemas and thin handlers only. Keep handlers under 30 lines.
+- Services contain business logic and must never import `@modelcontextprotocol/sdk`.
+- Domain functions are pure: no HTTP, no I/O, no MCP types.
+- External clients are injected. Do not import HTTP clients into domain code.
+
+## TypeScript
+
+- Strict mode: `noImplicitAny`, `strictNullChecks`, `exactOptionalPropertyTypes`.
+- Every exported function must have an explicit return type.
+- Never use `any`. Use `unknown` with type guards.
+- Prefer `readonly` arrays and interfaces for immutable data.
+- Keep functions under 40 lines. Extract helpers early.
+- One tool per file in `src/tools/`. Export only the tool definition object.
+
+## Errors
+
+- Throw `McpError` from `src/utils/errors.ts` at the service/tool boundary.
+- Domain code throws `DomainError` only.
+- Codes: `InvalidParams`, `InternalError`, `GeocodingFailed`, `ROUTE_FAIL`, `CLUSTER_FAIL`, `GEOMETRY_FAIL`, `PROVIDER_CONFIG`, `TIMEOUT`, `UPSTREAM_ERROR`.
+- Preserve existing `McpError` codes when wrapping (`wrapError`); never re-label a `TIMEOUT` as a generic failure.
+- Redact secrets (`redactUrl` / `redactSecrets`) in every error message and log line. Do not rely on production masking.
+- Never leak stack traces to MCP clients in production. Log them on stderr.
+- Validate all tool inputs with Zod. Fail fast.
+
+## Testing
+
+- Every file in `src/domain/` has a matching test in `tests/unit/domain/`.
+- Every tool has at least one integration test.
+- Use deterministic seeds for clustering tests.
+- Mock all HTTP. Never hit real APIs in tests.
+- Maintain at least 80% statement, branch, function, and line coverage across `src/` (excluding `src/index.ts`).
+
+## Logging
+
+- stdout is reserved for MCP stdio. All logs go to stderr as JSON.
+
+## Commits
+
+- Branches: `feature/<kebab-name>`, `fix/<kebab-name>`, `refactor/<kebab-name>`.
+- Commits: Conventional Commits, e.g. `feat(tools): add time-window support to optimizeRoute`.
