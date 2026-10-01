@@ -39,7 +39,7 @@ export function createServices(config: AppConfig, overrides: InfraOverrides = {}
   const geocoding = overrides.geocoding ?? createGeocodingClient(http, config, cache);
   return {
     config,
-    routing: createRoutingService(osrm),
+    routing: createRoutingService(osrm, config.routeSearchTimeBudgetMs),
     geocoding: createGeocodingService(geocoding),
     matrix: createMatrixService(osrm, config.defaultSpeedKmh),
     cluster: createClusterService(),

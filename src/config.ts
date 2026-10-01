@@ -19,6 +19,7 @@ export interface AppConfig {
   readonly osrmUrl: string;
   readonly osrmMaxTableSize: number;
   readonly defaultSpeedKmh: number;
+  readonly routeSearchTimeBudgetMs: number;
   readonly logLevel: LogLevel;
   readonly cacheTtlSeconds: number;
   readonly httpTimeoutMs: number;
@@ -38,6 +39,7 @@ const envSchema = z.object({
     .default("https://router.project-osrm.org"),
   OSRM_MAX_TABLE_SIZE: z.coerce.number().int().min(2).max(10_000).default(100),
   HAVERSINE_SPEED_KMH: z.coerce.number().positive().max(300).default(40),
+  ROUTE_SEARCH_TIME_BUDGET_MS: z.coerce.number().int().min(50).max(30_000).default(1500),
   GEO_USER_AGENT: z.string().min(1).max(256).default(DEFAULT_USER_AGENT),
   PUBLIC_API_MIN_INTERVAL_MS: z.coerce.number().int().min(1000).max(60_000).default(1000),
   LOG_LEVEL: logLevelSchema.default("info"),
@@ -68,6 +70,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     osrmUrl: data.OSRM_URL.replace(/\/+$/, ""),
     osrmMaxTableSize: data.OSRM_MAX_TABLE_SIZE,
     defaultSpeedKmh: data.HAVERSINE_SPEED_KMH,
+    routeSearchTimeBudgetMs: data.ROUTE_SEARCH_TIME_BUDGET_MS,
     logLevel: data.LOG_LEVEL,
     cacheTtlSeconds: data.CACHE_TTL_SECONDS,
     httpTimeoutMs: data.HTTP_TIMEOUT_MS,

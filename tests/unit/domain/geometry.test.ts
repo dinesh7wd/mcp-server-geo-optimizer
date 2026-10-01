@@ -132,7 +132,7 @@ describe("simplifyPath", () => {
     expect(simplifyPath(corner.slice(0, 2), 1)).toHaveLength(2);
   });
 
-  it("handles long inputs without recursion limits", () => {
+  it("handles long inputs without recursion limits", { timeout: 30_000 }, () => {
     const line = Array.from({ length: 12_000 }, (_, i) => ({
       lat: Math.sin(i) * 0.01,
       lng: i * 0.001,

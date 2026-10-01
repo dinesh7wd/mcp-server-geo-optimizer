@@ -17,6 +17,7 @@ export interface TspOptions {
   readonly closed: boolean;
   readonly startIndex: number;
   readonly exactMaxSize?: number | undefined;
+  readonly timeBudgetMs?: number | undefined;
 }
 
 export interface VrpOptions {
@@ -26,6 +27,8 @@ export interface VrpOptions {
   readonly startIndex: number;
   readonly averageSpeedKmh: number;
   readonly exactMaxSize?: number | undefined;
+  /** Wall-clock limit for local search across all vehicles; the best route found so far is kept. */
+  readonly timeBudgetMs?: number | undefined;
 }
 
 export interface CostMatrices {
@@ -62,6 +65,7 @@ interface Step {
 
 interface Budget {
   remaining: number;
+  readonly deadline: number;
 }
 
 type Evaluate = (order: readonly number[]) => Evaluation;
@@ -70,7 +74,16 @@ type Distance = (from: number, to: number) => number;
 export const DEFAULT_EXACT_MAX_SIZE = 8;
 const MAX_IMPROVEMENT_PASSES = 1000;
 const SCHEDULE_EVALUATION_BUDGET = 40_000_000;
+export const DEFAULT_SEARCH_TIME_BUDGET_MS = 1500;
+const CLOCK_CHECK_INTERVAL = 64;
 const EPSILON = 1e-9;
+
+function spend(budget: Budget): void {
+  budget.remaining -= 1;
+  if (budget.remaining % CLOCK_CHECK_INTERVAL === 0 && performance.now() >= budget.deadline) {
+    budget.remaining = 0;
+  }
+}
 
 function matrixAt(matrix: Matrix, i: number, j: number): number {
   return requireIndex(requireIndex(matrix, i, "matrix row"), j, "matrix col");
@@ -240,8 +253,13 @@ function orOptDistance(tour: number[], distance: Distance, closed: boolean): boo
   return improved;
 }
 
-function optimizeDistance(tour: number[], distance: Distance, closed: boolean): number[] {
-  for (let pass = 0; pass < MAX_IMPROVEMENT_PASSES; pass += 1) {
+function optimizeDistance(
+  tour: number[],
+  distance: Distance,
+  closed: boolean,
+  deadline: number,
+): number[] {
+  for (let pass = 0; pass < MAX_IMPROVEMENT_PASSES && performance.now() < deadline; pass += 1) {
     const reversed = twoOptDistance(tour, distance, closed);
     const moved = orOptDistance(tour, distance, closed);
     if (!reversed && !moved) {
@@ -265,7 +283,7 @@ function twoOptPass(
         .slice(0, i)
         .concat(bestTour.slice(i, k + 1).reverse(), bestTour.slice(k + 1));
       const evaluation = evaluate(candidate);
-      budget.remaining -= 1;
+      spend(budget);
       if (isBetter(evaluation, bestEval)) {
         bestTour = candidate;
         bestEval = evaluation;
@@ -281,7 +299,7 @@ function relocatePass(
   evaluate: Evaluate,
   budget: Budget,
 ): Step | undefined {
-  for (let i = 1; i < tour.length; i += 1) {
+  for (let i = 1; i < tour.length && budget.remaining > 0; i += 1) {
     const node = requireIndex(tour, i, "tour");
     const without = tour.slice(0, i).concat(tour.slice(i + 1));
     for (let j = 1; j <= without.length && budget.remaining > 0; j += 1) {
@@ -290,7 +308,7 @@ function relocatePass(
       }
       const candidate = without.slice(0, j).concat([node], without.slice(j));
       const evaluation = evaluate(candidate);
-      budget.remaining -= 1;
+      spend(budget);
       if (isBetter(evaluation, current)) {
         return { tour: candidate, evaluation };
       }
@@ -321,6 +339,7 @@ function searchOrder(
   closed: boolean,
   scheduleEvaluate: Evaluate | undefined,
   exactMaxSize: number,
+  deadline: number,
 ): number[] {
   if (n <= exactMaxSize) {
     const distanceOnly: Evaluate = (order) => ({
@@ -329,12 +348,18 @@ function searchOrder(
     });
     return exactOrder(n, startIndex, scheduleEvaluate ?? distanceOnly);
   }
-  const tour = optimizeDistance(nearestNeighbor(n, distance, startIndex), distance, closed);
+  const tour = optimizeDistance(
+    nearestNeighbor(n, distance, startIndex),
+    distance,
+    closed,
+    deadline,
+  );
   if (scheduleEvaluate === undefined || scheduleEvaluate(tour).latenessMin <= EPSILON) {
     return tour;
   }
   const budget: Budget = {
     remaining: Math.max(20_000, Math.floor(SCHEDULE_EVALUATION_BUDGET / n)),
+    deadline,
   };
   return improve(tour, scheduleEvaluate, budget);
 }
@@ -359,6 +384,7 @@ export function solveTsp(matrix: Matrix, options: TspOptions): TspResult {
     options.closed,
     undefined,
     exactMaxSize,
+    performance.now() + (options.timeBudgetMs ?? DEFAULT_SEARCH_TIME_BUDGET_MS),
   );
   return { order, distanceKm: pathDistance(order, distance, options.closed) };
 }
@@ -545,6 +571,7 @@ function solveRoute(
   ctx: RouteContext,
   vehicleId: number,
   exactMaxSize: number,
+  deadline: number,
 ): Route {
   const toGlobal = (local: readonly number[]): number[] =>
     local.map((i) => requireIndex(group, i, "group"));
@@ -561,7 +588,7 @@ function solveRoute(
       }
     : undefined;
   const order = toGlobal(
-    searchOrder(group.length, 0, distance, ctx.closed, scheduleEvaluate, exactMaxSize),
+    searchOrder(group.length, 0, distance, ctx.closed, scheduleEvaluate, exactMaxSize, deadline),
   );
   const schedule = simulate(order, ctx, true);
   const demand = order
@@ -622,7 +649,12 @@ export function solveVrp(
   };
   const { groups, unassigned } = assignVehicles(points, options);
   const exactMaxSize = options.exactMaxSize ?? DEFAULT_EXACT_MAX_SIZE;
-  const routes = groups.map((group, vehicleId) => solveRoute(group, ctx, vehicleId, exactMaxSize));
+  const end = performance.now() + (options.timeBudgetMs ?? DEFAULT_SEARCH_TIME_BUDGET_MS);
+  const routes = groups.map((group, vehicleId) => {
+    const now = performance.now();
+    const share = Math.max(0, end - now) / (groups.length - vehicleId);
+    return solveRoute(group, ctx, vehicleId, exactMaxSize, now + share);
+  });
   return {
     routes,
     unassigned,

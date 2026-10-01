@@ -99,8 +99,8 @@ export function kmeans(points: readonly GeoPoint[], options: KMeansOptions): rea
   if (options.k < 1) {
     throw new DomainError("INVALID_K", "k must be at least 1");
   }
-  if (options.k > points.length) {
-    throw new DomainError("INVALID_K", "k cannot exceed the number of points");
+  if (points.length === 0) {
+    throw new DomainError("EMPTY", "kmeans requires at least one point");
   }
   const rand = mulberry32(options.seed);
   let centroids = initCentroids(points, Math.min(options.k, countDistinct(points)), rand);

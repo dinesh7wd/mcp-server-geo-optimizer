@@ -1,5 +1,10 @@
 import type { OsrmClient } from "../infrastructure/osrmClient.js";
-import { distanceMatrixFromCoords, solveVrp, type CostMatrices } from "../domain/tspSolver.js";
+import {
+  DEFAULT_SEARCH_TIME_BUDGET_MS,
+  distanceMatrixFromCoords,
+  solveVrp,
+  type CostMatrices,
+} from "../domain/tspSolver.js";
 import type { Route, RouteStop, TimeWindowViolation, VrpResult } from "../domain/types.js";
 import { ErrorCodes, wrapError } from "../utils/errors.js";
 import { roundKm, roundMin } from "../utils/format.js";
@@ -56,7 +61,10 @@ function present(
   };
 }
 
-export function createRoutingService(osrm: OsrmClient): RoutingService {
+export function createRoutingService(
+  osrm: OsrmClient,
+  timeBudgetMs: number = DEFAULT_SEARCH_TIME_BUDGET_MS,
+): RoutingService {
   return {
     async optimize(input: OptimizeRouteInput): Promise<OptimizeRouteResult> {
       try {
@@ -69,6 +77,7 @@ export function createRoutingService(osrm: OsrmClient): RoutingService {
           closed: input.closed,
           startIndex: input.startIndex,
           averageSpeedKmh: input.averageSpeedKmh,
+          timeBudgetMs,
         });
         return present(result, input.useOsrm ? "osrm" : "haversine");
       } catch (err) {

@@ -240,6 +240,21 @@ describe("solveVrp: costs and time windows", () => {
     expect(arrivalAtUrgent(result)).toBeLessThanOrEqual(45);
   });
 
+  it("stops local search at the time budget and still visits every stop", () => {
+    const rand = seededRandom(7);
+    const points: Waypoint[] = Array.from({ length: 200 }, (_, i) => ({
+      lat: 13 + rand() * 0.5,
+      lng: 80 + rand() * 0.5,
+      ...(i === 0 ? {} : { dueTimeMin: 30 + Math.floor(rand() * 120), serviceTimeMin: 2 }),
+    }));
+    const started = performance.now();
+    const result = vrp(points, { vehicleCount: 2, timeBudgetMs: 100 });
+    expect(performance.now() - started).toBeLessThan(1000);
+    const visited = result.routes.flatMap((r) => r.stops.slice(1).map((s) => s.index));
+    expect(new Set(visited).size).toBe(199);
+    expect(result.unassigned).toEqual([]);
+  });
+
   it("reports violations instead of throwing when windows are infeasible", () => {
     const points = [
       { lat: 0, lng: 0 },

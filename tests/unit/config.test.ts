@@ -11,6 +11,7 @@ describe("config", () => {
       osrmUrl: "https://router.project-osrm.org",
       osrmMaxTableSize: 100,
       defaultSpeedKmh: 40,
+      routeSearchTimeBudgetMs: 1500,
       cacheTtlSeconds: 300,
       httpTimeoutMs: 10_000,
       httpRetries: 2,
@@ -31,8 +32,10 @@ describe("config", () => {
       GEO_USER_AGENT: "my-app/2.0 (ops@example.com)",
       PUBLIC_API_MIN_INTERVAL_MS: "1500",
       LOG_LEVEL: "debug",
+      ROUTE_SEARCH_TIME_BUDGET_MS: "3000",
     });
     expect(cfg).toMatchObject({
+      routeSearchTimeBudgetMs: 3000,
       geocodingProvider: "mapbox",
       geocodingApiKey: "pk.1",
       osrmUrl: "http://localhost:5000",

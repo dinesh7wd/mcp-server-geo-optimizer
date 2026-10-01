@@ -45,9 +45,15 @@ describe("kmeans", () => {
     }
   });
 
-  it("rejects invalid k", () => {
-    expect(() => kmeans(clustered, { k: 9, seed: 1, maxIterations: 10 })).toThrow(DomainError);
+  it("rejects k below 1 and an empty point list", () => {
     expect(() => kmeans(clustered, { k: 0, seed: 1, maxIterations: 10 })).toThrow(DomainError);
+    expect(() => kmeans([], { k: 1, seed: 1, maxIterations: 10 })).toThrow(DomainError);
+  });
+
+  it("reduces k larger than the point count to one cluster per distinct point", () => {
+    const clusters = kmeans(clustered, { k: clustered.length + 5, seed: 1, maxIterations: 10 });
+    expect(clusters).toHaveLength(countDistinct(clustered));
+    expect(clusters.every((c) => c.points.length === 1)).toBe(true);
   });
 
   it("clamps k to distinct points instead of returning empty clusters", () => {
