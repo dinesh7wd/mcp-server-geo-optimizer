@@ -39,26 +39,38 @@ export function createGeocodingClient(
   config: AppConfig,
   cache: LruCache,
 ): GeocodingClient {
+  const inflight = new Map<string, Promise<unknown>>();
+
+  /** Concurrent identical lookups share one provider request (public APIs are rate limited). */
+  function cachedLookup<T>(key: string, load: () => Promise<T>): Promise<T> {
+    const cached = cache.get<T>(key);
+    if (cached !== undefined) {
+      return Promise.resolve(cached);
+    }
+    const pending = inflight.get(key);
+    if (pending !== undefined) {
+      return pending as Promise<T>;
+    }
+    const promise = load()
+      .then((value) => {
+        cache.set(key, value);
+        return value;
+      })
+      .finally(() => inflight.delete(key));
+    inflight.set(key, promise);
+    return promise;
+  }
+
   return {
-    async forward(address: string, limit: number): Promise<readonly GeocodeHit[]> {
-      const key = `geo:fwd:${config.geocodingProvider}:${limit}:${address}`;
-      const cached = cache.get<readonly GeocodeHit[]>(key);
-      if (cached !== undefined) {
-        return cached;
-      }
-      const hits = await forwardByProvider(http, config, address, limit);
-      cache.set(key, hits);
-      return hits;
+    forward(address: string, limit: number): Promise<readonly GeocodeHit[]> {
+      return cachedLookup(`geo:fwd:${config.geocodingProvider}:${limit}:${address}`, () =>
+        forwardByProvider(http, config, address, limit),
+      );
     },
-    async reverse(coord: Coord): Promise<GeocodeHit> {
-      const key = `geo:rev:${config.geocodingProvider}:${coord.lat},${coord.lng}`;
-      const cached = cache.get<GeocodeHit>(key);
-      if (cached !== undefined) {
-        return cached;
-      }
-      const hit = await reverseByProvider(http, config, coord);
-      cache.set(key, hit);
-      return hit;
+    reverse(coord: Coord): Promise<GeocodeHit> {
+      return cachedLookup(`geo:rev:${config.geocodingProvider}:${coord.lat},${coord.lng}`, () =>
+        reverseByProvider(http, config, coord),
+      );
     },
   };
 }

@@ -254,7 +254,9 @@ describe("clusterService", () => {
     expect(() => service.cluster({ points, algorithm: "dbscan", seed: 1 })).toThrow(
       /epsKm is required/,
     );
-    expect(service.cluster({ points, algorithm: "kmeans", k: 100, seed: 1 })).toHaveLength(points.length);
+    expect(service.cluster({ points, algorithm: "kmeans", k: 100, seed: 1 })).toHaveLength(
+      points.length,
+    );
   });
 });
 

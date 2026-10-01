@@ -46,7 +46,7 @@ const envSchema = z.object({
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   HTTP_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {

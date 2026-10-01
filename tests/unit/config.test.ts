@@ -16,7 +16,7 @@ describe("config", () => {
       httpTimeoutMs: 10_000,
       httpRetries: 2,
       publicApiMinIntervalMs: 1000,
-      nodeEnv: "development",
+      nodeEnv: "production",
       userAgent: DEFAULT_USER_AGENT,
     });
     expect(cfg.geocodingApiKey).toBeUndefined();

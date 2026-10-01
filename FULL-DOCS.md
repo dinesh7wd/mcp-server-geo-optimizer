@@ -144,20 +144,20 @@ LOG_LEVEL=info
 NODE_ENV=production
 ```
 
-| Variable                     | Required            | Description                                                            |
-| ---------------------------- | ------------------- | ---------------------------------------------------------------------- |
-| `GEOCODING_PROVIDER`         | No                  | `nominatim` (default), `google`, or `mapbox`                           |
-| `GEOCODING_API_KEY`          | For google / mapbox | API key; redacted from logs and errors                                 |
-| `GEO_USER_AGENT`             | Recommended         | Outbound `User-Agent`; include contact details                         |
-| `OSRM_URL`                   | No                  | http(s) OSRM endpoint (default: public demo)                           |
-| `OSRM_MAX_TABLE_SIZE`        | No                  | Max coordinates per OSRM table call (default: `100`)                   |
-| `HAVERSINE_SPEED_KMH`        | No                  | km → minutes speed without OSRM (default: `40`)                        |
-| `PUBLIC_API_MIN_INTERVAL_MS` | No                  | Spacing for public Nominatim / OSRM hosts, `>= 1000` (default: `1000`) |
-| `HTTP_TIMEOUT_MS`            | No                  | Outbound timeout per attempt (default: `10000`)                        |
-| `HTTP_RETRIES`               | No                  | Retry on 5xx / 429 / network errors, `0`-`5` (default: `2`)            |
-| `CACHE_TTL_SECONDS`          | No                  | LRU cache TTL (default: `300`)                                         |
-| `LOG_LEVEL`                  | No                  | `debug`, `info`, `warn`, `error` (default: `info`)                     |
-| `NODE_ENV`                   | No                  | `production` masks unexpected errors (default: `development`)          |
+| Variable                     | Required            | Description                                                              |
+| ---------------------------- | ------------------- | ------------------------------------------------------------------------ |
+| `GEOCODING_PROVIDER`         | No                  | `nominatim` (default), `google`, or `mapbox`                             |
+| `GEOCODING_API_KEY`          | For google / mapbox | API key; redacted from logs and errors                                   |
+| `GEO_USER_AGENT`             | Recommended         | Outbound `User-Agent`; include contact details                           |
+| `OSRM_URL`                   | No                  | http(s) OSRM endpoint (default: public demo)                             |
+| `OSRM_MAX_TABLE_SIZE`        | No                  | Max coordinates per OSRM table call (default: `100`)                     |
+| `HAVERSINE_SPEED_KMH`        | No                  | km → minutes speed without OSRM (default: `40`)                          |
+| `PUBLIC_API_MIN_INTERVAL_MS` | No                  | Spacing for public Nominatim / OSRM hosts, `>= 1000` (default: `1000`)   |
+| `HTTP_TIMEOUT_MS`            | No                  | Outbound timeout per attempt (default: `10000`)                          |
+| `HTTP_RETRIES`               | No                  | Retry on 5xx / 429 / network errors, `0`-`5` (default: `2`)              |
+| `CACHE_TTL_SECONDS`          | No                  | LRU cache TTL (default: `300`)                                           |
+| `LOG_LEVEL`                  | No                  | `debug`, `info`, `warn`, `error` (default: `info`)                       |
+| `NODE_ENV`                   | No                  | `production` (default) masks unexpected errors; `development` shows them |
 
 ---
 
@@ -288,7 +288,7 @@ mcp-server-geo-optimizer/
 | 2 Infrastructure              | Done             |
 | 3 Services                    | Done             |
 | 4 Tools                       | Done             |
-| 5 Integration + tests         | Done (142 tests) |
+| 5 Integration + tests         | Done (146 tests) |
 | 6 Polish (README, CI, errors) | Done             |
 
 ### OSRM explained

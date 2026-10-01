@@ -70,21 +70,21 @@ docker run -i --rm -e GEOCODING_PROVIDER=nominatim -e GEO_USER_AGENT="my-team-ge
 
 Copy `.env.example` to `.env` to start from documented defaults.
 
-| Variable                     | Required                  | Description                                                                                             |
-| ---------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `GEOCODING_PROVIDER`         | No                        | `nominatim` (default), `google`, or `mapbox`                                                            |
-| `GEOCODING_API_KEY`          | For `google` and `mapbox` | Provider API key. Redacted from all logs and error messages                                             |
-| `GEO_USER_AGENT`             | Recommended               | `User-Agent` sent on every outbound request. Include contact details for Nominatim                      |
-| `OSRM_URL`                   | No                        | http(s) OSRM endpoint (default: public demo server)                                                     |
-| `OSRM_MAX_TABLE_SIZE`        | No                        | Max coordinates per OSRM table request, checked before any call (default: `100`, the demo server limit) |
-| `HAVERSINE_SPEED_KMH`        | No                        | Speed used to convert straight-line km to minutes when OSRM is not used (default: `40`)                 |
-| `ROUTE_SEARCH_TIME_BUDGET_MS` | No                       | Wall-clock limit for route local search per request, shared across vehicles (default: `1500`, range 50-30000). The best route found so far is returned when it runs out |
-| `PUBLIC_API_MIN_INTERVAL_MS` | No                        | Minimum spacing between requests to the public Nominatim and OSRM hosts, `>= 1000` (default: `1000`)    |
-| `HTTP_TIMEOUT_MS`            | No                        | Outbound HTTP timeout per attempt (default: `10000`)                                                    |
-| `HTTP_RETRIES`               | No                        | Retries for 5xx, 429, and network errors, `0`-`5` (default: `2`)                                        |
-| `CACHE_TTL_SECONDS`          | No                        | In-memory LRU TTL for geocoding and OSRM responses (default: `300`)                                     |
-| `LOG_LEVEL`                  | No                        | `debug`, `info`, `warn`, `error` (default: `info`)                                                      |
-| `NODE_ENV`                   | No                        | `production` hides unexpected error details from clients (default: `development`)                       |
+| Variable                      | Required                  | Description                                                                                                                                                             |
+| ----------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GEOCODING_PROVIDER`          | No                        | `nominatim` (default), `google`, or `mapbox`                                                                                                                            |
+| `GEOCODING_API_KEY`           | For `google` and `mapbox` | Provider API key. Redacted from all logs and error messages                                                                                                             |
+| `GEO_USER_AGENT`              | Recommended               | `User-Agent` sent on every outbound request. Include contact details for Nominatim                                                                                      |
+| `OSRM_URL`                    | No                        | http(s) OSRM endpoint (default: public demo server)                                                                                                                     |
+| `OSRM_MAX_TABLE_SIZE`         | No                        | Max coordinates per OSRM table request, checked before any call (default: `100`, the demo server limit)                                                                 |
+| `HAVERSINE_SPEED_KMH`         | No                        | Speed used to convert straight-line km to minutes when OSRM is not used (default: `40`)                                                                                 |
+| `ROUTE_SEARCH_TIME_BUDGET_MS` | No                        | Wall-clock limit for route local search per request, shared across vehicles (default: `1500`, range 50-30000). The best route found so far is returned when it runs out |
+| `PUBLIC_API_MIN_INTERVAL_MS`  | No                        | Minimum spacing between requests to the public Nominatim and OSRM hosts, `>= 1000` (default: `1000`)                                                                    |
+| `HTTP_TIMEOUT_MS`             | No                        | Outbound HTTP timeout per attempt (default: `10000`)                                                                                                                    |
+| `HTTP_RETRIES`                | No                        | Retries for 5xx, 429, and network errors, `0`-`5` (default: `2`)                                                                                                        |
+| `CACHE_TTL_SECONDS`           | No                        | In-memory LRU TTL for geocoding and OSRM responses (default: `300`)                                                                                                     |
+| `LOG_LEVEL`                   | No                        | `debug`, `info`, `warn`, `error` (default: `info`)                                                                                                                      |
+| `NODE_ENV`                    | No                        | Default `production` hides unexpected error details from clients; set `development` locally to see them                                                                 |
 
 Logs are written as JSON to **stderr**. stdout is reserved for MCP stdio.
 
@@ -92,14 +92,14 @@ Logs are written as JSON to **stderr**. stdout is reserved for MCP stdio.
 
 All tools are read-only and idempotent. `optimize_route`, `geocode`, and `distance_matrix` may call external services (`openWorldHint: true`); the others are purely local. Results are compact JSON with distances rounded to metres (3 decimals, km), durations to 2 decimals (minutes), and coordinates to 6 decimals.
 
-| Tool              | Purpose                                                                                                                                                     |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool              | Purpose                                                                                                                                                                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `optimize_route`  | TSP / VRP over 2-200 waypoints (up to `OSRM_MAX_TABLE_SIZE` with `useOsrm: true`). Supports vehicles, capacity, service times, and time windows in minutes. Local search (2-opt, Or-opt, relocate) stops at `ROUTE_SEARCH_TIME_BUDGET_MS`, so large time-window problems can vary slightly between runs. |
-| `geocode`         | Forward (`address`, max 500 chars) or reverse (`lat` + `lng` together) geocoding, `limit` 1-10.                                                             |
-| `distance_matrix` | Pairwise km and minutes, `mode` `haversine` or `osrm`. At most 100 origins, 100 destinations, and 2,500 cells per request.                                  |
-| `cluster_points`  | Deterministic `kmeans` (seeded, k-means++) or `dbscan`, up to 500 points. A `k` larger than the number of distinct points is reduced to that number. Centroids are spherical means, so clusters across the antimeridian work.          |
-| `boundary_check`  | `point_in_polygon`, `convex_hull`, `bounding_box`, up to 5,000 points. All handle the antimeridian.                                                         |
-| `geojson_utils`   | `validate` (recursive, RFC 7946), `simplify` (keeps altitude, recurses into features and collections), `to_feature_collection`. GeoJSON input max 2 MB.     |
+| `geocode`         | Forward (`address`, max 500 chars) or reverse (`lat` + `lng` together) geocoding, `limit` 1-10.                                                                                                                                                                                                          |
+| `distance_matrix` | Pairwise km and minutes, `mode` `haversine` or `osrm`. At most 100 origins, 100 destinations, and 2,500 cells per request.                                                                                                                                                                               |
+| `cluster_points`  | Deterministic `kmeans` (seeded, k-means++) or `dbscan`, up to 500 points. A `k` larger than the number of distinct points is reduced to that number. Centroids are spherical means, so clusters across the antimeridian work.                                                                            |
+| `boundary_check`  | `point_in_polygon`, `convex_hull`, `bounding_box`, up to 5,000 points. All handle the antimeridian.                                                                                                                                                                                                      |
+| `geojson_utils`   | `validate` (recursive, RFC 7946), `simplify` (keeps altitude, recurses into features and collections), `to_feature_collection`. GeoJSON input max 2 MB.                                                                                                                                                  |
 
 ### Routing semantics
 
@@ -145,7 +145,7 @@ npm run test:coverage  # 80% thresholds across src/
 npm run typecheck
 npm run lint
 npm run format:check
-dai sunpm run build
+npm run build
 ```
 
 ## Architecture

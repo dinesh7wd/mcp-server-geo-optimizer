@@ -169,6 +169,30 @@ describe("geocodingClient: nominatim", () => {
     expect(http.request).toHaveBeenCalledTimes(1);
   });
 
+  it("shares one provider request between concurrent identical lookups", async () => {
+    const http = mockHttp({ status: 200, body: [{ lat: "1", lon: "2" }] });
+    const client = createGeocodingClient(http, testConfig(), cache());
+    const [first, second] = await Promise.all([
+      client.forward("Same", 1),
+      client.forward("Same", 1),
+    ]);
+    expect(second).toBe(first);
+    expect(http.request).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not cache or keep failed in-flight lookups", async () => {
+    const http = mockHttp(
+      { status: 500, body: null },
+      { status: 200, body: [{ lat: "1", lon: "2" }] },
+    );
+    const client = createGeocodingClient(http, testConfig(), cache());
+    await expect(client.forward("Retry", 1)).rejects.toMatchObject({
+      code: ErrorCodes.GeocodingFailed,
+    });
+    await expect(client.forward("Retry", 1)).resolves.toHaveLength(1);
+    expect(http.request).toHaveBeenCalledTimes(2);
+  });
+
   it("fails reverse geocoding when Nominatim returns an error body", async () => {
     const http = mockHttp({ status: 200, body: { error: "Unable to geocode" } });
     await expect(createGeocodingClient(http, testConfig(), cache()).reverse(a)).rejects.toThrow(

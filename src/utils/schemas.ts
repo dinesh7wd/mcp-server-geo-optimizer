@@ -62,7 +62,7 @@ function waypointSchema(): z.ZodObject<WaypointShape> {
         .optional()
         .describe("Load this stop takes from vehicle capacity (same unit as capacity). Default 0"),
       readyTimeMin: minutes(
-        "Earliest service start in minutes after route start; the vehicle waits if early",
+        "Earliest service start in minutes after route start; the vehicle waits if early. Must not exceed dueTimeMin",
       ),
       dueTimeMin: minutes(
         "Latest arrival in minutes after route start. On the depot with closed=true it is the latest return time",
@@ -104,7 +104,9 @@ export const optimizeRouteInputSchema = z
       .int()
       .nonnegative()
       .default(0)
-      .describe("Index in waypoints of the depot where every route starts"),
+      .describe(
+        "Index in waypoints of the depot where every route starts; must be less than waypoints.length",
+      ),
     averageSpeedKmh: z
       .number()
       .positive()
@@ -193,7 +195,9 @@ export const distanceMatrixInputSchema = z
       .array(coordSchema("Origin location"))
       .min(1)
       .max(100)
-      .describe("Origin locations (1-100)"),
+      .describe(
+        `Origin locations (1-100). origins x destinations must not exceed ${MAX_MATRIX_CELLS} cells`,
+      ),
     destinations: z
       .array(coordSchema("Destination location"))
       .min(1)
@@ -322,7 +326,9 @@ export const geojsonUtilsInputSchema = z
     geojson: z
       .unknown()
       .optional()
-      .describe("GeoJSON object with [lng, lat] coordinates, for validate and simplify"),
+      .describe(
+        `GeoJSON object with [lng, lat] coordinates, for validate and simplify (at most ${MAX_GEOJSON_CHARS} characters as JSON)`,
+      ),
     points: z
       .array(pointSchema("Point to convert"))
       .min(1)
